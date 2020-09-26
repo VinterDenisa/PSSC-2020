@@ -1,0 +1,13 @@
+	Este bine știut faptul că în domeniul în care noi activăm, ne izbim frecvent de anumite probleme sau erori pe care nu știm să le rezolvăm, având astfel nevoie de
+ajutor, fie el și doar sub forma unei idei. Tocmai aceasta este și ideea din spatele aplicației web StackOverflow, care se dorește a fi o comunitate în cadrul căreia 
+utilizatorii se pot ajuta reciproc. Aplicația StackOverflow include o platformă publică, în care oricine poate adresa întrebări și primi răspunsuri, sau doar raspunde la
+întrebări,precum și o platformă privată care permite schimbul de informație doar între membrii unei echipe.
+	Orice utilizator poate vedea întrebările si răspunsurile fără a fi logat, însă pentru a putea adresa întrebări sau pentru a răspunde la anumite întrebări este
+necesară logarea. Validarea răspunsurilor este necesară, deoarece utilizatorii au nevoie să știe dacă răspunsurile primite sunt corecte. Acestă validare se face prin
+acordarea posibilității unui utilizator de a vota răspunsurile. Cu cât răspunsul are mai multe voturi, cu atât el e considerat mai bun și apare în vârful răspunsurilor
+unei anumite întrebări pentru a putea fi văzut mai ușor. În acest context există și un sistem de reputație care se obține cu fiecare vot pe care utilizatorul îl primește
+pentru o întrebare sau un raspuns.
+	Întrebarile pot avea etichete, astfel încât vor fi mai ușor de găsit. O întrebare poate avea mai multe etichete, deoarece aceasta poate fi legată de mai multe
+subiecte, în cadrul aplicației existând filtru pentru întrebări, cât și posibilitatea de a căuta după anumite cuvinte cheie sau titluri, etichete.
+	De asemenea, pe lângă facilitățile mai sus menționate, această aplicație dedicată domeniului tehnic, oferă facilități și pentru oamenii care fie au nevoie să
+recruteze, fie să își găsească un loc de muncă.
