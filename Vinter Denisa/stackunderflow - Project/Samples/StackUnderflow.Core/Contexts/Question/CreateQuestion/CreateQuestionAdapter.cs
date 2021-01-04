@@ -9,9 +9,9 @@ using static StackUnderflow.Domain.Core.Contexts.Question.CreateQuestion.CreateQ
 
 namespace StackUnderflow.Domain.Core.Contexts.Question.CreateQuestion
 {
-    class CreateQuestionAdapter : Adapter<CreateQuestionCmd, CreateQuestionResult.ICreateQuestionResult, QuestionWriteContext, QuestionDependencies>
+    class CreateQuestionAdapter : Adapter<CreateQuestionCmd, ICreateQuestionResult, QuestionWriteContext, QuestionDependencies>
     {
-        public override Task PostConditions(CreateQuestionCmd cmd, CreateQuestionResult.ICreateQuestionResult result, QuestionWriteContext state)
+        public override Task PostConditions(CreateQuestionCmd cmd, ICreateQuestionResult result, QuestionWriteContext state)
         {
             return Task.CompletedTask;
         }
@@ -21,6 +21,7 @@ namespace StackUnderflow.Domain.Core.Contexts.Question.CreateQuestion
             var workflow = from valid in cmd.TryValidate()
                            let t = AddQuestion(state, CreateQuestionFromCmd(cmd))
                            select t;
+            state.Questions.Add(new DatabaseModel.Models.Questions { QuestionId = Guid.NewGuid() , Title = "Titlul intrebarii", Body = "Descrierea intrebarii", Tags = "Tag-urile intrebarii" });
 
             var result = await workflow.Match(
                 Succ: r => r,
@@ -32,7 +33,7 @@ namespace StackUnderflow.Domain.Core.Contexts.Question.CreateQuestion
 
         private ICreateQuestionResult AddQuestion(QuestionWriteContext state, object v)
         {
-            return new QuestionPosted(new Guid("1"), "Title", "Body", "Tag");
+            return new QuestionPosted(Guid.NewGuid(), "Titlul intrebarii", "Descrierea intrebarii", "Tag-urile intrebarii");
         }
 
         private object CreateQuestionFromCmd(CreateQuestionCmd cmd)

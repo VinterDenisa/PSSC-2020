@@ -20,51 +20,73 @@ using Microsoft.EntityFrameworkCore;
 using StackUnderflow.DatabaseModel.Models;
 using StackUnderflow.Domain.Core.Contexts.Question.CheckLanguage;
 using StackUnderflow.Domain.Core.Contexts.Question.SendAckToQuestionOwner;
+using static StackUnderflow.Domain.Core.Contexts.Question.CreateQuestion.CreateQuestionResult;
+using Orleans;
 
 namespace StackUnderflow.API.AspNetCore.Controllers
 {
-        [ApiController]
-        [Route("question")]
-        public class QuestionController : ControllerBase
+    [ApiController]
+    [Route("question")]
+    public class QuestionController : ControllerBase
+    {
+        private readonly IInterpreterAsync _interpreter;
+        private readonly DatabaseContext _dbContext;
+        private readonly IClusterClient clusterClient;
+
+        public QuestionController(IInterpreterAsync interpreter, DatabaseContext dbContext, IClusterClient clusterClient)
         {
-            private readonly IInterpreterAsync _interpreter;
-            private readonly DatabaseContext _dbContext;
+            _interpreter = interpreter;
+            _dbContext = dbContext;
+            this.clusterClient = clusterClient;
+        }
 
-            public QuestionController(IInterpreterAsync interpreter, DatabaseContext dbContext)
+        [HttpPost("CreateQuestionStream")]
+        public async Task<IActionResult> CreateQuestion()
+        {
+
+            //create question workflow
+            var stream = clusterClient.GetStreamProvider("SMSProvider").GetStream<Post>(Guid.Empty, "questions");
+            var post = new Post
             {
-                _interpreter = interpreter;
-                _dbContext = dbContext;
-            }
+                PostId = 2,
+                PostText = "My question2"
+            };
 
-            [HttpPost("CreateQuestion")]
-            public async Task<IActionResult> CreateQuestion(CreateQuestionCmd cmd)
-            {
-                var dep = new QuestionDependencies();
-                var questions = await _dbContext.Questions.ToListAsync();
-            // _dbContext.Questions.AttachRange(questions);
-            // var ctx = new QuestionWriteContext(new EFList<Questions>(_dbContext.Questions));
-            var ctx = new QuestionWriteContext(questions);
+            await stream.OnNextAsync(post);
+            return Ok();
+        }
 
-            var expr = from createTenantResult in QuestionContext.CreateQuestion(cmd)
+        [HttpPost("CreateQuestion")]
+        public async Task<IActionResult> CreateQuestion([FromBody] CreateQuestionCmd cmd)
+        {
+            var dep = new QuestionDependencies();
+            var questions = await _dbContext.Questions.ToListAsync();
+            _dbContext.Questions.AttachRange(questions);
+            var ctx = new QuestionWriteContext(new EFList<Questions>(_dbContext.Questions));
+            // var ctx = new QuestionWriteContext(questions);
+
+            var expr = from createQuestionResult in QuestionContext.CreateQuestion(cmd)
                        from checkLanguageResult in QuestionContext.CheckLanguage(new CheckLanguageCmd(cmd.Body))
-                       from sendAckToQuestionOwnerCmd in QuestionContext.SendAckToQuestionOwner(new SendAckToQuestionOwnerCmd(1, 2))
-                       select createTenantResult;
+                       select createQuestionResult;
 
-                var r = await _interpreter.Interpret(expr, ctx, dep);
+            /* var expr = from createQuestionResult in QuestionContext.CreateQuestion(cmd)
+                        from checkLanguageResult in QuestionContext.CheckLanguage(new CheckLanguageCmd(cmd.Body))
+                        from sendAckToQuestionOwner in QuestionContext.SendAckToQuestionOwner(new SendAckToQuestionOwnerCmd(1, 2))
+                        select createQuestionResult; */
 
-            
-             _dbContext.Questions.Add(new DatabaseModel.Models.Questions {  QuestionId=1, Title=cmd.Title, Body=cmd.Body, Tags=cmd.Tags });
-              var question=await _dbContext.Questions.Where(r => r.QuestionId==1).SingleOrDefaultAsync();
+            var r = await _interpreter.Interpret(expr, ctx, dep);
 
-            _dbContext.Questions.Update(question);
-             
-                await _dbContext.SaveChangesAsync();
+            _dbContext.Questions.Add(new DatabaseModel.Models.Questions { QuestionId = Guid.NewGuid(), Title = cmd.Title, Body = cmd.Body, Tags = cmd.Tags });
+            //var question=await _dbContext.Questions.Where(r => r.QuestionId== new Guid("20000000-0000-0000-0000-000000000000")).SingleOrDefaultAsync();
 
-                return r.Match(
-                    created => (IActionResult)Ok("Posted"),
-                    notCreated => BadRequest("Not posted"),
+            // _dbContext.Questions.Update(question);
+            await _dbContext.SaveChangesAsync();
+
+            return r.Match(
+                    created => (IActionResult)Ok(created.Body),
+                    notcreated => BadRequest("NotPosted"),
                     invalidRequest => ValidationProblem()
                     );
-            }
         }
     }
+}
